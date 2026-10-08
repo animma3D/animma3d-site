@@ -222,6 +222,32 @@
     box-shadow:0 8px 24px rgba(0,209,192,.4);font-size:26px;transition:transform .15s;
   }
   .fab:hover{transform:scale(1.08);}
+
+  /* ---- pop-up de campanha (catálogo de natal) ---- */
+  .popup-overlay{
+    position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);
+    display:none;align-items:center;justify-content:center;padding:20px;
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  }
+  .popup-overlay.show{display:flex;animation:popFade .25s ease;}
+  .popup-card{
+    position:relative;width:100%;max-width:420px;background:var(--ink);color:#fff;
+    border-radius:22px;padding:40px 32px 28px;text-align:center;
+    border:1px solid rgba(0,209,192,.35);
+    box-shadow:0 24px 80px rgba(0,0,0,.5), 0 0 60px rgba(0,209,192,.18);
+    animation:popUp .3s ease;
+  }
+  .popup-emoji{font-size:54px;line-height:1;margin-bottom:14px;}
+  .popup-eyebrow{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;}
+  .popup-card h3{font-family:'Space Grotesk',sans-serif;font-size:28px;line-height:1.1;margin:0 0 12px;text-wrap:balance;}
+  .popup-card p{font-size:15px;line-height:1.55;color:#c9c9c9;margin:0 0 24px;}
+  .popup-card .btn{width:100%;justify-content:center;}
+  .popup-close{position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:22px;cursor:pointer;line-height:1;}
+  .popup-close:hover{background:rgba(255,255,255,.18);}
+  .popup-skip{display:inline-block;margin-top:14px;background:none;border:none;color:#8a8a8a;font-size:13px;cursor:pointer;font-family:inherit;}
+  .popup-skip:hover{color:#fff;}
+  @keyframes popFade{from{opacity:0}to{opacity:1}}
+  @keyframes popUp{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
 </style>
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -561,6 +587,71 @@
       btn.textContent = 'Enviar pedido de orçamento';
     }
   });
+</script>
+
+<!-- ============ POP-UP: CATÁLOGO DE NATAL ============ -->
+<div class="popup-overlay" id="popup-catalogo" role="dialog" aria-modal="true" aria-labelledby="popup-catalogo-titulo">
+  <div class="popup-card">
+    <button class="popup-close" id="popup-catalogo-fechar" aria-label="Fechar">&times;</button>
+    <div class="popup-emoji">🎄</div>
+    <div class="popup-eyebrow">Novidade</div>
+    <h3 id="popup-catalogo-titulo">Confira nosso catálogo de Natal</h3>
+    <p>Presentes personalizados feitos em 3D com muito carinho. Dá uma olhada nas opções!</p>
+    <a class="btn btn-teal" id="popup-catalogo-cta" href="#" target="_blank" rel="noopener">Ver catálogo 🎁</a>
+    <br>
+    <button class="popup-skip" id="popup-catalogo-agora-nao">Agora não</button>
+  </div>
+</div>
+<script>
+(function(){
+  /* ===== CONFIGURAÇÃO DO POP-UP — é só mexer aqui ===== */
+  var CONFIG = {
+    ativo: true,                         // false = desliga o pop-up sem apagar nada
+    link: '/catalogo-natal.pdf',         // nome do PDF que fica no repositório, junto do index.html
+    chave: 'animma3d-popup-natal-2026',  // trocar o nome faz o pop-up reaparecer pra quem já fechou
+    lembrarHoras: 24,                    // depois de fechar, só volta a aparecer depois desse tempo
+    atrasoMs: 1500                       // espera antes de abrir (1500 = 1,5 segundo)
+  };
+
+  var overlay = document.getElementById('popup-catalogo');
+  var cta = document.getElementById('popup-catalogo-cta');
+  if(!overlay || !cta || !CONFIG.ativo) return;
+  cta.href = CONFIG.link;
+
+  function jaDispensado(){
+    try{
+      var t = localStorage.getItem(CONFIG.chave);
+      return !!t && (Date.now() - Number(t)) < CONFIG.lembrarHoras * 3600 * 1000;
+    }catch(e){ return false; }
+  }
+  function marcarDispensado(){
+    try{ localStorage.setItem(CONFIG.chave, String(Date.now())); }catch(e){}
+  }
+  function abrir(){
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    try{ cta.focus(); }catch(e){}
+  }
+  function fechar(){
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+    marcarDispensado();
+  }
+
+  document.getElementById('popup-catalogo-fechar').addEventListener('click', fechar);
+  document.getElementById('popup-catalogo-agora-nao').addEventListener('click', fechar);
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) fechar(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && overlay.classList.contains('show')) fechar(); });
+  cta.addEventListener('click', function(){ setTimeout(fechar, 150); }); // o PDF abre em nova aba, o pop-up fecha aqui
+
+  if(jaDispensado()) return;
+  setTimeout(function(){
+    // só abre se o PDF realmente existir no site (evita pop-up com link quebrado)
+    fetch(CONFIG.link, {method:'HEAD', cache:'no-store'})
+      .then(function(r){ if(r.ok) abrir(); })
+      .catch(function(){});
+  }, CONFIG.atrasoMs);
+})();
 </script>
 
 </body>
