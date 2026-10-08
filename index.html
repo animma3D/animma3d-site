@@ -644,12 +644,15 @@
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && overlay.classList.contains('show')) fechar(); });
   cta.addEventListener('click', function(){ setTimeout(fechar, 150); }); // o PDF abre em nova aba, o pop-up fecha aqui
 
-  if(jaDispensado()) return;
+  // para testar: abra o site com ?popup=1 no final do endereço (mostra sempre, ignorando a memória)
+  var forcar = /[?&]popup=1(&|$)/.test(location.search);
+  if(!forcar && jaDispensado()) return;
   setTimeout(function(){
-    // só abre se o PDF realmente existir no site (evita pop-up com link quebrado)
+    if(forcar){ abrir(); return; }
+    // só deixa de abrir se o PDF NÃO existir (erro 404) — evita pop-up com link quebrado
     fetch(CONFIG.link, {method:'HEAD', cache:'no-store'})
-      .then(function(r){ if(r.ok) abrir(); })
-      .catch(function(){});
+      .then(function(r){ if(r.status !== 404) abrir(); })
+      .catch(function(){ abrir(); });
   }, CONFIG.atrasoMs);
 })();
 </script>
